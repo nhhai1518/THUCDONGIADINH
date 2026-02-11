@@ -1,7 +1,7 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 import { WeeklyPlan, DAYS, MEAL_TIMES } from "../types";
-import { Breakfast_Options, Main_Meal_Options, Evening_Snack_Options } from "../constants";
+import { Breakfast_Options, Main_Meal_Options, Evening_Snack_Options, getDishImage } from "../constants";
 
 export const generateAIPlan = async (currentPlan: WeeklyPlan): Promise<WeeklyPlan> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
@@ -15,7 +15,7 @@ export const generateAIPlan = async (currentPlan: WeeklyPlan): Promise<WeeklyPla
     Quy tắc:
     1. Chỉ chọn từ danh sách đã cho.
     2. Một số món đã được 'locked' (giữ nguyên), không được thay đổi chúng.
-    3. Đảm bảo sự đa dạng, không trùng món quá nhiều trong 1 ngày.
+    3. Trả về tên món ăn chính xác.
   `;
 
   const response = await ai.models.generateContent({
@@ -32,7 +32,7 @@ export const generateAIPlan = async (currentPlan: WeeklyPlan): Promise<WeeklyPla
               acc[day] = {
                 type: Type.OBJECT,
                 properties: MEAL_TIMES.reduce((mAcc: any, time) => {
-                  mAcc[time] = { type: Type.STRING };
+                  mAcc[time] = { type: Type.STRING }; // AI returns a single string suggestion for simplicity
                   return mAcc;
                 }, {})
               };
@@ -50,8 +50,18 @@ export const generateAIPlan = async (currentPlan: WeeklyPlan): Promise<WeeklyPla
   if (aiData.plan) {
     DAYS.forEach(day => {
       MEAL_TIMES.forEach(time => {
+        // If the slot is not locked and AI provided a suggestion
         if (!newPlan[day][time].isLocked && aiData.plan[day]?.[time]) {
-          newPlan[day][time].dish = aiData.plan[day][time];
+          const dishName = aiData.plan[day][time];
+          // Replace current dishes with the new AI suggestion (single item)
+          newPlan[day][time] = {
+            ...newPlan[day][time],
+            dishes: [{
+              id: Date.now() + Math.random().toString(),
+              name: dishName,
+              imageUrl: getDishImage(dishName)
+            }]
+          };
         }
       });
     });

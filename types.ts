@@ -5,8 +5,14 @@ export type MealTime = 'Sáng' | 'Trưa' | 'Chiều' | 'Tối';
 
 export type DayOfWeek = 'Thứ Hai' | 'Thứ Ba' | 'Thứ Tư' | 'Thứ Năm' | 'Thứ Sáu' | 'Thứ Bảy' | 'Chủ Nhật';
 
+export interface Dish {
+  id: string;
+  name: string;
+  imageUrl?: string;
+}
+
 export interface MealSlot {
-  dish: string;
+  dishes: Dish[]; // Changed from single dish string to array of dishes
   isLocked: boolean;
 }
 
